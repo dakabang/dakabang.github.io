@@ -2,7 +2,7 @@ title: ladiesman217 GitHub.io
 description: Ladiesman217 blog
 google_analytics: 
 show_downloads: true
-theme: jekyll-theme-hacker
+theme: jekyll-theme-minimal
 
 gems:
   - jekyll-mentions
