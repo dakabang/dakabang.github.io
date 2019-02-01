@@ -1,0 +1,35 @@
+#互斥锁
+
+##基本概念
+互斥锁的机制根据字面理解，就是不能同时获取的意思，当一个线程获取了互斥锁，另一个线程就需要等待直到拥有锁的线程释放。
+
+##实现原理
+
+- futex
+	在介绍互斥锁的时候，就需要介绍一下互斥锁的实现最重要的系统调用futex, futex（fast userspace mutex）是一个linux实现互斥的基本工具，第一次出现是在linux内核版本2.5.7.
+	futex有一块能够在进程中共享的内存空间组成，futex通过CPU提供的原子操作指令增加和减少。
+
+pthread_mutex实现原理
+	lock操作
+	```
+	// pthread_mutex_lock初始化的时候value==1
+	atomic_dec(pthread_mutex_lock.value);
+	if (pthread_mutex_lock.value != 0) {
+		futex_wait();
+	} else {
+		// success
+	}
+	```
+	unlock操作
+	```
+	atomic_inc(pthread_mutex_lock.value);
+	if (pthread_mutex_lock.value != 1) {
+		futex_wake();
+	} else {
+		// success
+	}
+	```
+	从上面的伪代码可以看出来，lock的时候对临界区的值原子-1，unlock的时候对临界区的原子+1，lock如果失败需要对当前线程挂起（其实是添加到等待队列中，具体可以学习futex的原理），unlock则需要唤醒等待的线程。
+
+原子操作实现原理
+	x86有一个原子操作指令，cmpxchg比较交换指令，就是CAS操作。由于是CPU级别的优化，因此性能很棒。原子操作有非常广泛的应用，在自旋锁，无锁数据结构等上面扮演着非常重要的角色
