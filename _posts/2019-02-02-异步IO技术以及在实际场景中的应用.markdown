@@ -27,17 +27,17 @@ client->request(req, callback);
 auto callback1 = {
 	// 收到服务1的回包，处理之后再调用服务2
 	....
-	client->request(req2, callback2);
+	client2->request(req2, callback2);
 };
 auto callback2 = {
 	// 收到服务2的回包，处理之后再请求服务3
 	...
-	client->request(req3, callback3);
+	client3->request(req3, callback3);
 };
 auto callback3 = {
 	// 处理服务3的回包
 };
-client->request(req1, callback1);
+client1->request(req1, callback1);
 ```
 如果遇到更多IO调用的情况就更加完蛋，这种异步编程模式的弊端（callback嵌套）也叫做***callback hell***，那么有什么方法可以避免这种蛋疼的编程模式的情况下性能仍然能够比较好吗？当然有，这就是协程。
 
@@ -49,6 +49,12 @@ client->request(req1, callback1);
 2. 调用第一个协程（即调用服务1），这时候因为写的是同步代码，按道理应该卡在这里等待IO，但是协程调度器会直接挂起这个协程，让出CPU，挂起协程的过程就是前面说的，保存现场（寄存器和调用栈）
 3. 等到IO准备好了（依然是epoll来完成通知），就恢复这个协程对象，从刚才执行完成的地方继续执行。
 
+代码如下：
+```
+client1->request(req1);
+client2->request(req2);
+clinet3->request(req3);
+```
 是不是很神奇，这样开发者就不用关心异步逻辑如何分割的问题，直接按照同步的方式写代码，框架会take care of everything！
 协程中保存和恢复上下文可以通过glibc的ucontext或者直接通过汇编来实现（具体实现过程会在下一篇博客中具体说明）
 协程等待IO的时候不等待而是挂起，让出CPU，这个操作是通过hook的方式将系统调用read，write等等重写，因此开发者还是直接调用read,write，但是其内部逻辑已经是覆盖后协程的处理逻辑。
