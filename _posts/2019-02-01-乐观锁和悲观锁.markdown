@@ -1,0 +1,46 @@
+## 基本概念
+乐观锁，顾名思义，保持乐观，假设锁可以成功获取，就算第一次没有获取成功，后面也会一直尝试获取，直到获取到为止
+悲观锁，就是已经做好了得不到锁的准备，如果一旦得不到锁，就开始自闭了，把自己挂起来，直到其他获取锁的线程告诉他，才会被唤醒
+
+## 实现原理
+乐观锁的轮训机制是通过CAS来实现的，就是不停地查看临界区的值是否满足条件，满足就swap并且向下执行，举个例子，如果是获取一个锁，可能判断的指标就是当前mutex是否被占用，假设被占用表示1，未被占用为0，那么代码就可以写成下面这个样子。
+```
+// lock操作
+// val表示临界区的值
+while (compare_and_swap(cond, 0, 1)) {
+	// 
+}
+
+// unlock操作
+compare_and_swap(cond, 1, 0);
+```
+
+悲观锁机制是如果获取不到mutex，那么就把自己挂起来，挂起来这个操作也是通过futex系统调用来实现的，具体流程如下(这里贴出来简化版的glibc的代码)
+```
+//lock操作
+int pthread_mutex_lock(pthread_mutex_t* mutex) {
+	// 获取锁的type
+	unsigned int type = PTHREAD_MUTEX_ELISON(mutex);
+	// 上锁（这里省略了很多glibc对锁的类型的判断逻辑，不是重点，略过）
+	int* __futex = (futex);
+	// CAS直接在用户空间修改锁变量，将其自增1，如果成功，说明获取了锁，就没有必要调用内核去等待了
+	// 自增失败的时候，说明锁被占用了，这时候SYSCall(futex_wait)陷入内核等待
+	if (__glibc_unlikely(atomic_exchange_acq(__futex, 2) != 0) {
+		futex_wait();
+	}
+}
+// unlock操作
+int pthread_mutex_unlock(pthread_mutex_t* mutex) {
+	int* __iptr = (int*)mutex->data->__lock;
+	// CAS修改mutex的锁变量为0，返回值为2表示解锁成功（因为上锁成功之后的值就是2）
+	// 解锁成功才需要调用系统函数futex_wait，否则不同
+	if (atomic_exchange_rel(__iptr, 0) == 2) {
+		futex_wake();
+	}
+}
+```
+
+## 总结
+1. 乐观锁的机制就是CAS不停轮训，因为CAS的性能很好，因此如果在竞争比较小的场景下性能会比较好
+2. 悲观锁的机制就是通过futex系统调用来调度线程的睡眠和唤醒，上锁失败就睡眠，解锁成功就通知竞争这个锁的线程唤醒，也就是由操作系统来调度这个过程，在竞争比较大的情况下性能较好
+3. 无论是乐观锁还是悲观锁，都需要通过CAS来保证临界区的原子性
