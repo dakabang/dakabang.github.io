@@ -1,0 +1,104 @@
+排序是算法中很经典的一类问题，也是在面试中一个非常基础的技能，这里我把常见的算法罗列一下
+
+## 冒泡算法
+冒泡算法顾名思义，就是像冒泡一样，调整相邻两个数之间的位置来完成排序工作，举个例子，从小到大排序，那么我们先从第一个数开始，对比第一个数和第二个数，如果第一个数大于第二个数，那么就调换他们的位置，然后继续遍历第二个和第三个数，以此类推，完成遍历的时候最后一个元素就是最大的，然后再按照这个方法选出第二大的元素，一直到最后一个，也就是数组中最小的元素。代码如下
+
+```
+void bubbleSort(std::vector<int>& nums) {
+	for (int i = 1; i < nums.size(); i++) {
+		for (int j = 0; j < nums.size() - i, j++) {
+			if (nums[j] >  nums[j+1]) {
+				int tmp = nums[j];
+				nums[j] = nums[i];
+				nums[i] = tmp;
+			}
+		}
+	}
+}
+```
+
+## 选择排序
+选择排序是每一次选择最大/最小的数，然后最终按照顺序形成一个排好序的数组，代码如下：
+
+```
+void selectSort(std::vector<int>& nums) {
+	for (int i = 0; i < nums.size() - 1; i++) {
+		int min = i;
+		for (int j = i+1; j < nums.size()-1; j++) {
+			if (nums[j] < nums[min]) {
+				min = j;
+			}
+		}
+		int temp = nums[min];
+		nums[min] = nums[i];
+		nums[i] = temp;
+	}
+}
+```
+
+## 插入排序
+插入排序就是每次都将后面的元素插入到前面已经排好序的数组中（初始化的情况就是第二个数插入到第一个数组成的数组中），把第n个数插入到0到n-1的已经排好序的数组中，最终完成排序 ，具体代码如下。
+
+```
+void  insertSort(std::vector<int>& nums) {
+	for  (int i = 1;  i < nums.size(); i++) {
+		for (int j = 0; j < i; j++) {
+			if (nums[i] < nums[j]) {
+				int tmp = nums[i];
+				int s = i;
+				while (s < j) {
+					nums[s] = nums[s-1];
+					s--;
+				}
+			}
+		}
+	}
+}
+```
+
+## 希尔排序
+希尔排序是第一个突破O(n^2)的排序算法，希尔排序又叫做缩小增量排序，原则上是插入排序的一种，但是和插入排序不同的是，希尔排序会首先确定一个间隔的大小k(小于数组长度n)，然后第一个元素和第k+1个元素比较，如果不满足排序就swap，一轮过后就k/3，然后继续这样，一直到k=1，完成排序。代码如下。
+
+```
+void shellSort(std::vector<int>& nums) {
+    int gap = 1;
+    while (gap < nums.size() / 3) {
+        gap = gap * 3 + 1;
+    }
+    int temp;
+    for (gap; gap > 0; gap = floor(gap / 3)) {
+        for (int i = gap; i < nums.size(); i++) {
+            temp = nums[i];
+            for (int j = i-gap; j > 0 && nums[j]> temp; j-=gap) {
+                nums[j + gap] = nums[j];
+            }
+            nums[j + gap] = temp;
+        }
+    }
+}
+```
+
+## 归并排序
+归并排序顾名思义，就是利用分治的思想将排序问题分解为多个排序之后再merge的过程，也叫2-路归并，代码如下;
+
+```
+void mergeSort(std::vector<int> nums, int left, int right) { 
+    if (left < right) {
+        int middle = lelft + (right - left) / 2; 
+        mergeSort(nums, left, middle); 
+        mergeSort(nums, middle + 1, right); 
+        merge(nums, left, middle, right); 
+    } 
+}
+void merge(std::vector<int>& nums，int left, int middle, int right) {
+	std::vector<int> res;
+	int left_index = left;
+	int right_index = middle;
+	while (left_index < middle && middle < right) {
+		int smallest = nums[left_index] >  nums[right_index] ? nums[left_index++] : nums[right_index==];
+		res.push_back(smallest);
+	}
+	res.swap(nums);
+}
+
+```
