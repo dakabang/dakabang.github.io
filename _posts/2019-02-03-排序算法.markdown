@@ -102,3 +102,57 @@ void merge(std::vector<int>& nums，int left, int middle, int right) {
 }
 
 ```
+
+## 计数排序
+计数排序是第一个突破nlog(n)复杂度的排序方法，但是有他的局限性，首先需要排序的是整数，并且最大值不能太大 ，因为计数排序的算法复杂度是O(n+k)，k就是最大值，如果k远大于n，那么就失去计数排序的必要了。计数排序的方法其实很容易理解，将每一个数根据自己的大小方法对应下标的数组位置中，比如我们排序[9,5,4,3,6,7,2,1,9]，9就被放在数组下标为9的地方，7就放在数组下标为7的地方，放完所有的元素之后再遍历数组，就可以达到排序的效果,代码如下。
+```
+void countSort(std::vector<int>& nums) {
+	// 找到最大数
+	int max = INT32_MIN;
+	for (int i = 0; i < nums.size(); ++i) {
+		if (nums[i] > max) {
+			max = nums[i];
+		}
+	}
+	// 申请大小为max+1的数组
+	std::vector<int> sorts;
+	sorts.resize(max+1);
+	// 将对应的数字放到对应下标的位置上
+	for (int i = 0; i < nums.size(); i++) {
+		sorts[nums[i]]++;
+	}
+	// 输出遍历排序好的数组
+	int pos = 0;
+	for (int i = 0; i < sorts.size(); i++) {
+		for (int j = 0; j < sorts[i]; j++) {
+			nums[pos++] = i;
+		}
+	}
+}
+```
+
+## 基数排序
+基数排序是基于技术排序的一种排序算法，其复杂度也是O(n)的，具体操作就是按照个位计数排序，排好之后的数组就是按照个位升序的，然后再按照十位去排，以此类推，最后得到的就是排好序的数组，其计算复杂度和数组的大小和位数相关，位数不太多的情况下复杂度就是O(n)
+```
+void radixSort(std::vector<int>& nums, int max_digit) {
+	// 遍历所有的位
+	for (int i = 0; i < max_digit; i++) {
+		std::vector<std::vector> sorts;
+		// 只需要10个槽
+		sorts.resize(10);
+		for (int j = 0; j < nums.size(); j++) {
+			sorts[nums[j] % pow(10, i) / pow(10, i+1)].push_back(nums[j]);
+		}
+		// 排好序的按照顺序再放到数组中，供下一位的计数排序 
+		int pos = 0;
+		for (int j = 0; j < sorts.size(); j++) {
+			for (int m = 0; m < sorts[j].size(); m++) {
+				nums[pos++] = sorts[j][m];
+			}
+		}
+	}
+}
+```
+
+## 桶排序
+桶排序更多是一种排序的思想，根据一种映射规则，将元素映射到对应桶的位置中，然后在桶中对元素进行排序（具体排序算法可以使用选择排序，比较排序等等），之后将桶中的元素按照顺序连起来。细细想想，其实桶排序就是计数排序的升级版，和计数排序不同的是，不是按照数字大小放到对应下标的位置，位置根据映射得到的值来放置，好处就是一个好的映射算法可以使得排序更加均匀，使用空间也更少。
