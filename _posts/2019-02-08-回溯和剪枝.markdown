@@ -1,0 +1,113 @@
+## 基本概念
+回溯是深度搜索找到问题解决方案的过程，其实就是枚举的方式，剪枝则是在搜索的过程中加入一些适当的约束，用来缩小搜索空间，让回溯算法更快。
+
+## 回溯算法
+回溯算法多使用递归的方式来实现，每次递归调用的时候将上一步选择的信息传给函数，避免重复递归和无限递归，递归在找到正确解和结束条件之时结束。给出一个例题来解释一下，给出n个括号，找到所有可能的结果可能，比如n=3，那么可能的结果如下：
+```
+()()()
+()(())
+(())()
+(()())
+((()))
+```
+程序如下：
+```
+void backtrace(std::vector<std::string>& res, std::string& sub, int right, int left)  {
+	if (left == 0 && right == 0) {
+		// 找到一个正确解，插入到结果中
+		res.push_back(sub);
+	}
+	if (right > left) {
+		backtrace(res, sub + ")", right-1, left);
+	}
+	if (left > 0) {
+		backtrace(res, sub + "(", right, left - 1);
+	}
+}
+```
+这个问题的搜索规则是这样的，在字符串任何一个位置，右括号的个数不能大于左括号的个数，否则就是一个非法的结果，因此代码中是先判断剩下右括号是不是大于左括号个数，如果是的话，就添加一个右括号。
+可以总结一下，回溯算法就是按照一定的规则枚举所有的解，再举一个例子，找迷宫的出口的代码应该这么写：
+```
+// 假设迷宫是一个m*n的矩阵，1表示有路，0表示没有路，*表示出口
+// 1 0 0
+// 1 1 0
+// 0 1 *
+void findMaze(std::vector<std::vector> maze, int row, int col) {
+	if (row >= maze.size() || col >= maze[0].size()) {
+		// 走到迷宫外面去了，无效解
+		// 这一步其实就是剪枝，去掉无效的路径，避免了无限递归的可能
+		return;
+	}
+	if (maze(row, col) == '*') {
+		// 找到了！
+		std::cout << "find the way out!";
+	} else {
+		// 往左走
+		findMaze(maze, row, col + 1);
+		// 往右走
+		findMaze(maze, row + 1, col);
+	}
+}
+```
+
+## 剪枝技巧
+什么是剪枝 ，剪枝就是在搜索有效解的时候判断哪些路径可以走，哪些路径可以不走了，试想想，如果在搜索第一步的时候就可以 减掉一半的搜索分支，搜索的空间就会减少一半，还是非常有用的。直接说什么是剪枝可能有些抽象，我们这里用一个经典的剪枝问题来帮助理解一下。
+
+问题描述：
+乔治拿来一组等长的木棒，将它们随机地裁断，使得每一节木棍的长度都不超过50个长度单位。然后他又想把这些木棍恢复到为裁截前的状态，但忘记了初始时有多少木棒以及木棒的初始长度。请你设计一个程序，帮助乔治计算木棒的可能最小长度。每一节木棍的长度都用大于零的整数表示。
+
+问题思路：
+首先计算所有木棒的长度之和total，然后木棒长度len从1开始递增，每当满足total%len==0的时候，就寻找是否是正确解，正确解的方法是这样，total/len就是每个木棒截断后的堆的总长度。遍历所有的截断后的棒子，如果满足了，就遍历其他堆（总共total/len个堆），需要每个堆都满足才是正确解。
+
+剪枝技巧
+如果一个木棍作为第一个棍子长度x就不满足x<=len，那么就不用继续搜索这个分支了，还有就是如果一个木棍不满足，那么另一个木棍也是一样的长度也是不满足的，这样也可以剪枝。
+```
+int a[1024];
+int vis[1024];
+//第i堆还差rest的长度到len,第i堆中刚才选了第p根
+bool run(int i, int rest, int p, int n) {
+    if(i > k) {
+        return 1;
+    }
+    int fail=0; 
+    //从第p+1根开始选
+    for(int x=p+1; x<=n; x++) {
+	    if(!vis[x]) { 
+	        if(a[x]==a[fail]) continue;//剪枝
+	        if(rest>a[x]) {
+	            vis[x]=1;
+	            bool w=run(i,rest-a[x],x);
+	            vis[x]=0;
+	            if(!w) fail=x;
+	            if(w) return 1;
+	        } else if(rest==a[x]) {
+	            vis[x]=1;
+	            bool w=run(i+1,len,0);
+	            vis[x]=0;
+	            return w;
+	        }
+	        if(p==0) return 0; 
+	    }
+	}
+    return 0;
+}
+int findMinLen(std::vector<int>& nums) {
+	int max = INT32_MIN;
+	int total = 0;
+	for (int i = 0; i < nums.size(); i++) {
+		if (max < nums[i]) {
+			max = nums[i];
+		}
+		total += nums[i];
+	}
+	for (int len = max; len <= total; len++) {
+		if (total % len == 0) {
+			int k = total / len;
+			if (run(1, len, 0, nums.size())) {
+				std::cout << len;
+				break;
+			}
+		}
+	}
+}
+```
